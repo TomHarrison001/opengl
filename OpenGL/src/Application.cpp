@@ -7,7 +7,9 @@
 #include <sstream>
 
 #include "Renderer.h"
+#include "VAO.h"
 #include "VBO.h"
+#include "VBOLayout.h"
 #include "IBO.h"
 
 struct ShaderProgramSource
@@ -49,22 +51,22 @@ static unsigned int CompileShader(unsigned int type, const std::string& source)
 {
     unsigned int id = glCreateShader(type);
     const char* src = source.c_str();
-    glShaderSource(id, 1, &src, nullptr);
-    glCompileShader(id);
+    GLCall(glShaderSource(id, 1, &src, nullptr));
+    GLCall(glCompileShader(id));
 
     int result;
-    glGetShaderiv(id, GL_COMPILE_STATUS, &result);
+    GLCall(glGetShaderiv(id, GL_COMPILE_STATUS, &result));
     if (result == GL_FALSE)
     {
         int length;
-        glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+        GLCall(glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length));
         char* message = (char*)alloca(length * sizeof(char));
-        glGetShaderInfoLog(id, length, &length, message);
+        GLCall(glGetShaderInfoLog(id, length, &length, message));
         std::cout << "Failed to compile " <<
             (type == GL_VERTEX_SHADER ? "vertex " : "fragment ") << 
             "shader." << std::endl;
         std::cout << message << std::endl;
-        glDeleteShader(id);
+        GLCall(glDeleteShader(id));
         return 0;
     }
     
@@ -77,13 +79,13 @@ static unsigned int CreateShader(const std::string& vertexShader, const std::str
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
     unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
 
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-    glLinkProgram(program);
-    glValidateProgram(program);
+    GLCall(glAttachShader(program, vs));
+    GLCall(glAttachShader(program, fs));
+    GLCall(glLinkProgram(program));
+    GLCall(glValidateProgram(program));
 
-    glDeleteShader(vs);
-    glDeleteShader(fs);
+    GLCall(glDeleteShader(vs));
+    GLCall(glDeleteShader(fs));
 
     return program;
 }
@@ -131,22 +133,18 @@ int main(void)
             0, 1, 2, 3, 2, 0
         };
 
-        unsigned int vao;
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-
+        VAO va;
         VBO vb(positions, 8 * sizeof(float));
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
-
+        VBOLayout layout;
+        layout.Push<float>(2);
+        va.AddBuffer(vb, layout);
         IBO ib(indices, 6);
 
         ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
         unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-        glUseProgram(shader);
+        GLCall(glUseProgram(shader));
         int location = glGetUniformLocation(shader, "u_colour");
-        glUniform4f(location, 1.f, 1.f, 0.f, 1.f);
+        GLCall(glUniform4f(location, 1.f, 1.f, 0.f, 1.f));
 
         float r = 0.f;
         float increment = 0.05f;
@@ -156,9 +154,12 @@ int main(void)
             /* Render here */
             glClear(GL_COLOR_BUFFER_BIT);
 
-            glUniform4f(location, r, 1.f, 0.f, 1.f);
+            GLCall(glUniform4f(location, r, 1.f, 0.f, 1.f));
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            va.Bind();
+            ib.Bind();
+
+            GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
             if (r > 1.f)
                 increment = -0.05f;
@@ -174,7 +175,7 @@ int main(void)
             glfwPollEvents();
         }
 
-        glDeleteProgram(shader);
+        GLCall(glDeleteProgram(shader));
     }
 
     glfwTerminate();
