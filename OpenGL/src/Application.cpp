@@ -58,9 +58,11 @@ int main(void)
 
         VAO va;
         VBO vb(positions, 8 * sizeof(float));
+
         VBOLayout layout;
         layout.Push<float>(2);
         va.AddBuffer(vb, layout);
+
         IBO ib(indices, 6);
 
         Shader shader("res/shaders/Basic.shader");
@@ -68,25 +70,23 @@ int main(void)
         shader.SetUniform4f("u_colour", 1.f, 1.f, 0.f, 1.f);
 
         va.Unbind();
-        shader.Unbind();
         vb.Unbind();
         ib.Unbind();
+        shader.Unbind();
+
+        Renderer m_MainRenderer;
 
         float r = 0.f;
         float increment = 0.05f;
         /* Loop until the user closes the window */
         while (!glfwWindowShouldClose(window))
         {
-            /* Render here */
-            GLCall(glClear(GL_COLOR_BUFFER_BIT));
+            m_MainRenderer.Clear();
 
             shader.Bind();
             shader.SetUniform4f("u_colour", r, 1.f, 0.f, 1.f);
 
-            va.Bind();
-            ib.Bind();
-
-            GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+            m_MainRenderer.Draw(va, ib, shader);
 
             if (r > 1.f)
                 increment = -0.05f;

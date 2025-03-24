@@ -1,5 +1,6 @@
 #include "VAO.h"
 
+#include "VBOLayout.h"
 #include "Renderer.h"
 
 VAO::VAO()

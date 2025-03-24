@@ -1,7 +1,8 @@
 #pragma once
 
 #include "VBO.h"
-#include "VBOLayout.h"
+
+class VBOLayout;
 
 class VAO
 {
