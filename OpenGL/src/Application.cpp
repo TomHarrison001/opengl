@@ -12,6 +12,7 @@
 #include "VBOLayout.h"
 #include "IBO.h"
 #include "Shader.h"
+#include "Texture.h"
 
 int main(void)
 {
@@ -45,21 +46,25 @@ int main(void)
         std::cout << glGetString(GL_VERSION) << std::endl;
 
     {
-        float positions[8] = {
-            -0.5f, -0.5f,
-             0.5f, -0.5f,
-             0.5f,  0.5f,
-            -0.5f,  0.5f
+        float positions[16] = {
+            -0.5f, -0.5f, 0.0f, 0.0f,
+             0.5f, -0.5f, 1.0f, 0.0f,
+             0.5f,  0.5f, 1.0f, 1.0f,
+            -0.5f,  0.5f, 0.0f, 1.0f
         };
 
         unsigned int indices[6] = {
             0, 1, 2, 3, 2, 0
         };
 
+        GLCall(glEnable(GL_BLEND));
+        GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
         VAO va;
-        VBO vb(positions, 8 * sizeof(float));
+        VBO vb(positions, 16 * sizeof(float));
 
         VBOLayout layout;
+        layout.Push<float>(2);
         layout.Push<float>(2);
         va.AddBuffer(vb, layout);
 
@@ -67,7 +72,10 @@ int main(void)
 
         Shader shader("res/shaders/Basic.shader");
         shader.Bind();
-        shader.SetUniform4f("u_colour", 1.f, 1.f, 0.f, 1.f);
+
+        Texture texture("res/textures/rock.png");
+        texture.Bind();
+        shader.SetUniform1i("u_texture", 0);
 
         va.Unbind();
         vb.Unbind();
@@ -76,24 +84,14 @@ int main(void)
 
         Renderer m_MainRenderer;
 
-        float r = 0.f;
-        float increment = 0.05f;
         /* Loop until the user closes the window */
         while (!glfwWindowShouldClose(window))
         {
             m_MainRenderer.Clear();
 
             shader.Bind();
-            shader.SetUniform4f("u_colour", r, 1.f, 0.f, 1.f);
 
             m_MainRenderer.Draw(va, ib, shader);
-
-            if (r > 1.f)
-                increment = -0.05f;
-            else if (r < 0.f)
-                increment = 0.05f;
-
-            r += increment;
 
             /* Swap front and back buffers */
             glfwSwapBuffers(window);
